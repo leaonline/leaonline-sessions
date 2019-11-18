@@ -3,5 +3,14 @@
     "http://localhost:8080",
     "http://localhost:3000"
   ],
-  "submitUrl": "/response"
+  "submitUrl": "/response",
+  "eval": {
+    "path": "/eval",
+    "responseIdSeparator": "_",
+    "prefix": "ID",
+    "separator": ";",
+    "url": "http://134.xxx.xxx.xxx/ocpu",
+    "functionName": "ScoreThis",
+    "paramName": "x"
+  }
 }
