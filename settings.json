@@ -12,5 +12,6 @@
     "url": "http://134.xxx.xxx.xxx/ocpu",
     "functionName": "ScoreThis",
     "paramName": "x"
-  }
+  },
+  "sessionCredential": "01234567890123456789"
 }

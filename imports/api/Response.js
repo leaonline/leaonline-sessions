@@ -43,6 +43,7 @@ Response.httpRoutes.submit = {
   numRequests: 10,
   timeInterval: 1000,
   path: submitUrl,
+  tokenRequired: true,
   schema: {
     /**
      * _id (not username!) of the user who responded
@@ -96,8 +97,6 @@ Response.httpRoutes.submit = {
     // TODO and deny updating if session does not exists or is expired
     const timeStamp = new Date()
     const ResponseCollection = Response.collection()
-    console.log({ userId, type, contentId, page, taskId, sessionId, responses })
-    console.log(ResponseCollection.findOne({ userId, sessionId, taskId }), ResponseCollection.find().fetch())
     const responseDoc = ResponseCollection.findOne({ userId, contentId, page, taskId, sessionId })
     if (responseDoc) {
       return ResponseCollection.update(responseDoc._id, { $set: { responses, updatedAt: timeStamp } })
@@ -125,6 +124,7 @@ Response.httpRoutes.evaluateSession = {
   numRequests: 10,
   timeInterval: 1000,
   path: evalContext.path,
+  tokenRequired: true,
   schema: {
     userId: String,
     sessionId: String
@@ -132,10 +132,9 @@ Response.httpRoutes.evaluateSession = {
   run: Meteor.isServer && function ({ userId, sessionId }) {
     // TODO SECURITY check if sessions is running (call content server)
     // TODO and deny updating if session does not exists or is expired
-    console.log(userId, sessionId)
     const ResponseCollection = Response.collection()
     const allResponses = ResponseCollection.find({ userId, sessionId }).fetch()
-    console.log(allResponses.length)
+
     const responseIds = []
     const responseValues = []
 
