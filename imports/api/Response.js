@@ -140,6 +140,7 @@ Response.httpRoutes.evaluateSession = {
 
     let responseIdPrefix, responseId, responseIndex, responseValue
     allResponses.forEach(responseDoc => {
+      console.log(responseDoc)
       // example:
       // w0001 _ 01 _ 01
       // taskId  page responseIndex
@@ -147,7 +148,7 @@ Response.httpRoutes.evaluateSession = {
       const page = toDoubleNumString(responseDoc.page)
       responseIdPrefix = `${responseDoc.taskId}${idSep}${page}${idSep}`
       responseDoc.responses.forEach((value, index) => {
-        responseIndex = toDoubleNumString(index)
+        responseIndex = toDoubleNumString(index + 1) // + 1 because R expectes indices beginning from 01
         responseId = `${responseIdPrefix}${idSep}${responseIndex}`
         responseValue = typeof value === 'undefined' || value === null || value === '__undefined__' ? '' : value
         responseIds.push(responseId)
@@ -157,18 +158,45 @@ Response.httpRoutes.evaluateSession = {
 
     const requestParams = generateRequestParams(responseIds, responseValues)
     console.log(requestParams)
+
+    return {
+      'fulfilled': [
+        {
+          'competencyId': 'abc1',
+          'label': 'competencies.reading.1'
+        },
+        {
+          'competencyId': 'abc2',
+          'label': 'competencies.reading.2'
+        }
+      ],
+      'toImprove': [
+        {
+          'competencyId': 'abc3',
+          'label': 'competencies.reading.3'
+        },
+        {
+          'competencyId': 'abc4',
+          'label': 'competencies.reading.4'
+        }
+      ]
+    }
   }
 }
 
 function toDoubleNumString (num) {
-  if (typeof num !== 'number' || num < 1) {
-    throw new Error(`Expected number > 1, got ${num}`)
-  }
-  const strNum = parseInt(num, 10).toString(10)
-  if (num >= 10) {
-    return strNum
+  if (typeof num === 'number') {
+    if (num < 1) {
+      throw new Error(`Expected number > 1, got ${num}`)
+    }
+    const strNum = parseInt(num, 10).toString(10)
+    if (num >= 10) {
+      return strNum
+    } else {
+      return `0${strNum}`
+    }
   } else {
-    return `0${strNum}`
+    return num.length < 2 ? `0${num}` : num
   }
 }
 
