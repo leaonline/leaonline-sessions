@@ -1,4 +1,4 @@
-import { Response } from '../../api/Response'
+import { Response } from '../../api/response/Response'
 import { createRoutes } from '../../api/factories/createRoute'
 import { createCollection } from '../../api/factories/createCollection'
 

@@ -5,10 +5,14 @@
   ],
   "submitUrl": "/response",
   "eval": {
-    "path": "/eval",
+    "startIndex": "1",
     "responseIdSeparator": "_",
-    "prefix": "ID",
+    "idPrefix": "ID",
+    "valuePrefix": "CD",
+    "newLineChar": "",
     "separator": ";",
+    "validate": "^[a-zA-Z]\\d\\d\\d\\d_\\d\\d_\\d\\d_\\d\\d$",
+    "path": "/eval",
     "url": "http://134.xxx.xxx.xxx/ocpu",
     "functionName": "ScoreThis",
     "paramName": "x"

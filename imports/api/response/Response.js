@@ -1,4 +1,5 @@
 import { Meteor } from 'meteor/meteor'
+import { EvalRequestCSVStringBuilder } from './evalRequestCSVStringBuilder'
 
 const submitUrl = Meteor.settings.submitUrl
 const evalContext = Meteor.settings.eval
@@ -134,30 +135,12 @@ Response.httpRoutes.evaluateSession = {
     // TODO and deny updating if session does not exists or is expired
     const ResponseCollection = Response.collection()
     const allResponses = ResponseCollection.find({ userId, sessionId }).fetch()
+    const requestBuilder = new EvalRequestCSVStringBuilder(evalContext)
 
-    const responseIds = []
-    const responseValues = []
+    allResponses.forEach(responseDoc => requestBuilder.add(responseDoc))
+    const requestStr = requestBuilder.build()
+    console.log(requestStr)
 
-    let responseIdPrefix, responseId, responseIndex, responseValue
-    allResponses.forEach(responseDoc => {
-      console.log(responseDoc)
-      // example:
-      // w0001 _ 01 _ 01
-      // taskId  page responseIndex
-      // where _ is the idSeparator
-      const page = toDoubleNumString(responseDoc.page)
-      responseIdPrefix = `${responseDoc.taskId}${idSep}${page}${idSep}`
-      responseDoc.responses.forEach((value, index) => {
-        responseIndex = toDoubleNumString(index + 1) // + 1 because R expectes indices beginning from 01
-        responseId = `${responseIdPrefix}${idSep}${responseIndex}`
-        responseValue = typeof value === 'undefined' || value === null || value === '__undefined__' ? '' : value
-        responseIds.push(responseId)
-        responseValues.push(responseValue)
-      })
-    })
-
-    const requestParams = generateRequestParams(responseIds, responseValues)
-    console.log(requestParams)
 
     return {
       'fulfilled': [
@@ -184,31 +167,3 @@ Response.httpRoutes.evaluateSession = {
   }
 }
 
-function toDoubleNumString (num) {
-  if (typeof num === 'number') {
-    if (num < 1) {
-      throw new Error(`Expected number > 1, got ${num}`)
-    }
-    const strNum = parseInt(num, 10).toString(10)
-    if (num >= 10) {
-      return strNum
-    } else {
-      return `0${strNum}`
-    }
-  } else {
-    return num.length < 2 ? `0${num}` : num
-  }
-}
-
-const sep = evalContext.separator
-
-function generateRequestParams (responseIds, responseValues) {
-  let baseStr = 'ID' + sep
-  responseIds.forEach(id => {
-    baseStr = baseStr + id + sep
-  })
-  responseValues.forEach(value => {
-    baseStr = baseStr + value + sep
-  })
-  return baseStr
-}
