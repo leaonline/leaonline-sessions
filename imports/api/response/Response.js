@@ -116,7 +116,8 @@ Response.httpRoutes.submit = {
   })
 }
 
-const idSep = evalContext.responseIdSeparator // for example _
+const evalUrl = evalContext.url
+const evalParam = evalContext.param
 
 Response.httpRoutes.evaluateSession = {
   name: 'response.httpRoutes.evaluateSession',
@@ -139,31 +140,10 @@ Response.httpRoutes.evaluateSession = {
 
     allResponses.forEach(responseDoc => requestBuilder.add(responseDoc))
     const requestStr = requestBuilder.build()
-    console.log(requestStr)
 
-
-    return {
-      'fulfilled': [
-        {
-          'competencyId': 'abc1',
-          'label': 'competencies.reading.1'
-        },
-        {
-          'competencyId': 'abc2',
-          'label': 'competencies.reading.2'
-        }
-      ],
-      'toImprove': [
-        {
-          'competencyId': 'abc3',
-          'label': 'competencies.reading.3'
-        },
-        {
-          'competencyId': 'abc4',
-          'label': 'competencies.reading.4'
-        }
-      ]
-    }
+    const callOptions = { content: { [evalParam]: requestStr } }
+    const response = HTTP.post(evalUrl, callOptions)
+    return response && response.content && JSON.stringify(response.content)
   }
 }
 
