@@ -1,3 +1,5 @@
+import { check, Match } from 'meteor/check'
+
 /**
  * A builder for creating requests to the eval server.
  * @param startIndex {number|string} Sets, whether indices start with 0 or 1
@@ -10,13 +12,21 @@
  * @constructor
  */
 function EvalRequestCSVStringBuilder ({ startIndex, responseIdSeparator, idPrefix, valuePrefix, newLineChar, separator, validate }) {
+  check(startIndex, String)
+  check(responseIdSeparator, String)
+  check(idPrefix, String)
+  check(newLineChar, String)
+  check(valuePrefix, String)
+  check(separator, String)
+  check(validate, String)
+
   this.responseIds = []
   this.responseValues = []
 
   // responseId related
   this.startIndex = parseInt(startIndex, 10)
   this.responseIdSeparator = responseIdSeparator
-  this.responseIdValidator = new RegExp(validate, 'g')
+  this.responseIdValidator = new RegExp(validate)
   this.responseIdValidatorStr = this.responseIdValidator.toString()
 
   // csv string related
@@ -46,15 +56,20 @@ EvalRequestCSVStringBuilder.prototype.build = function () {
   addToken(this.valuePrefix)
   this.responseValues.forEach(responseValue => addToken(responseValue))
 
-  return tokens.join('')
+  return '"' + tokens.join('') + '"'
 }
 
-
 EvalRequestCSVStringBuilder.prototype.add = function ({ taskId, pageIndex, responseIndex, value }) {
-  const pageStr = toNumStr(pageIndex + this.startIndex)
+  check(taskId, String)
+  check(pageIndex, String)
+  check(responseIndex, Number)
+  check(value, Match.Maybe(String))
+
+  const pageNumIndex = parseInt(pageIndex, 10)
+  const pageIndexStr = toNumStr(pageNumIndex + this.startIndex)
   const responseIndexStr = toNumStr(responseIndex + this.startIndex)
   const responseValueStr = typeof value === 'undefined' || value === null || value === '__undefined__' ? '' : value
-  const responseId = this.buildId(taskId, pageStr, responseIndexStr)
+  const responseId = this.buildId(taskId, pageIndexStr, responseIndexStr)
   this.validateId(responseId)
   this.responseIds.push(responseId)
   this.responseValues.push(responseValueStr)
@@ -72,13 +87,7 @@ EvalRequestCSVStringBuilder.prototype.validateId = function (responseId) {
 }
 
 function toNumStr (value) {
-  const type = typeof value
-  if (value === null || type === 'undefined') {
-    throw new Error(`Unexpected undefined or null value`)
-  }
-  let strValue = type === 'string'
-    ? value
-    : value.toString()
+  const strValue = typeof value === 'number' ? value.toString(10) : value
   return strValue.length < 2 ? `0${strValue}` : strValue
 }
 

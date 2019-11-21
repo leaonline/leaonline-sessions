@@ -11,9 +11,10 @@
     "valuePrefix": "CD",
     "newLineChar": "",
     "separator": ";",
-    "validate": "^[a-zA-Z]\\d\\d\\d\\d_\\d\\d_\\d\\d_\\d\\d$",
+    "validate": "[A-Z]\\d{4,4}_\\d{2,2}_\\d{2,2}",
     "path": "/eval",
-    "url": "http://134.xxx.xxx.xxx/ocpu",
+    "base": "http://134.102.23.29:8004",
+    "url": "/ocpu/library/lea.sc/R/ScoreThis",
     "functionName": "ScoreThis",
     "paramName": "x"
   },

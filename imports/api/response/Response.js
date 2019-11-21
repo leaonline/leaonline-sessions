@@ -1,4 +1,5 @@
 import { Meteor } from 'meteor/meteor'
+import { HTTP } from 'meteor/http'
 import { EvalRequestCSVStringBuilder } from './evalRequestCSVStringBuilder'
 
 const submitUrl = Meteor.settings.submitUrl
@@ -116,8 +117,8 @@ Response.httpRoutes.submit = {
   })
 }
 
-const evalUrl = evalContext.url
-const evalParam = evalContext.param
+const evalUrl = evalContext.base + evalContext.url
+const evalParam = evalContext.paramName
 
 Response.httpRoutes.evaluateSession = {
   name: 'response.httpRoutes.evaluateSession',
@@ -138,12 +139,48 @@ Response.httpRoutes.evaluateSession = {
     const allResponses = ResponseCollection.find({ userId, sessionId }).fetch()
     const requestBuilder = new EvalRequestCSVStringBuilder(evalContext)
 
-    allResponses.forEach(responseDoc => requestBuilder.add(responseDoc))
+    allResponses.forEach(responseDoc => {
+      const pageIndex = responseDoc.page
+      const taskId = responseDoc.taskId
+      responseDoc.responses.forEach((value, responseIndex) => {
+        requestBuilder.add({ taskId, value, pageIndex, responseIndex })
+      })
+    })
     const requestStr = requestBuilder.build()
-
-    const callOptions = { content: { [evalParam]: requestStr } }
+    console.log(evalUrl)
+    const callOptions = { params: { [ evalParam ]: requestStr } }
+    console.log(callOptions)
     const response = HTTP.post(evalUrl, callOptions)
-    return response && response.content && JSON.stringify(response.content)
+    const csvResults = response.content.split('\n').filter(entry => entry.indexOf('.csv') > -1)
+    const allResults = csvResults.map(resultStr => {
+      const url = resultStr
+      const type = getType(resultStr)
+      const tempId = getTmpId(resultStr)
+      const getResult = HTTP.get(evalContext.base + resultStr)
+      const content = getResult.statusCode === 200 && getResult.content
+      return { userId, sessionId, url, type, tempId, content }
+    })
+
+    const scoredResult = allResults.find(el => el.type === 'scored')
+    // TODO save scored in collection
+
+    const dataResult = allResults.find(el => el.type === 'data')
+    // TODO save data in collection
+
+    const feedBackResult = allResults.find(el => el.type === 'feedback')
+    // save feedback and return
+
+    return feedBackResult
   }
 }
 
+function getType (csvStr) {
+  if (csvStr.indexOf('data') > -1) return 'data'
+  if (csvStr.indexOf('feedback') > -1) return 'feedback'
+  if (csvStr.indexOf('scored') > -1) return 'scored'
+}
+
+function getTmpId (csvStr) {
+  const split = csvStr && csvStr.split('/')
+  return split && split[ 2 ]
+}
