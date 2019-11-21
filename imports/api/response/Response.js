@@ -1,6 +1,9 @@
 import { Meteor } from 'meteor/meteor'
 import { HTTP } from 'meteor/http'
 import { EvalRequestCSVStringBuilder } from './evalRequestCSVStringBuilder'
+import { Feedback } from '../feedback/Feedback'
+import { Scores } from '../scores/Scores'
+import { Data } from '../data/Data'
 
 const submitUrl = Meteor.settings.submitUrl
 const evalContext = Meteor.settings.eval
@@ -133,12 +136,20 @@ Response.httpRoutes.evaluateSession = {
     sessionId: String
   },
   run: Meteor.isServer && function ({ userId, sessionId }) {
-    // TODO SECURITY check if sessions is running (call content server)
-    // TODO and deny updating if session does not exists or is expired
+    // to reduce the amount of evaluations for re-runs
+    // we just return the already saved evaluation
+    const existingFeedbackDoc = Feedback.collection().findOne({ userId, sessionId })
+    if (existingFeedbackDoc) {
+      return existingFeedbackDoc
+    }
+
+    // Then we collection all responses and build a request
+    // which uses for our current opencpu setup a csv-styled query string.
+    //
+    // In order to build the request string we use a dedicated String Builder
     const ResponseCollection = Response.collection()
     const allResponses = ResponseCollection.find({ userId, sessionId }).fetch()
     const requestBuilder = new EvalRequestCSVStringBuilder(evalContext)
-
     allResponses.forEach(responseDoc => {
       const pageIndex = responseDoc.page
       const taskId = responseDoc.taskId
@@ -146,29 +157,38 @@ Response.httpRoutes.evaluateSession = {
         requestBuilder.add({ taskId, value, pageIndex, responseIndex })
       })
     })
+
     const requestStr = requestBuilder.build()
-    console.log(evalUrl)
     const callOptions = { params: { [ evalParam ]: requestStr } }
-    console.log(callOptions)
     const response = HTTP.post(evalUrl, callOptions)
-    const csvResults = response.content.split('\n').filter(entry => entry.indexOf('.csv') > -1)
+    const contentList = response.content.split('\n')
+    const csvResults = contentList.filter(entry => entry.indexOf('.csv') > -1)
+    const createdAt = new Date()
+
+    const userResponse =  HTTP.get(evalContext.base + contentList[0])
+    console.log(userResponse.content)
+
+    // SAVE CSV FILES
     const allResults = csvResults.map(resultStr => {
       const url = resultStr
       const type = getType(resultStr)
       const tempId = getTmpId(resultStr)
       const getResult = HTTP.get(evalContext.base + resultStr)
       const content = getResult.statusCode === 200 && getResult.content
-      return { userId, sessionId, url, type, tempId, content }
+      return { userId, sessionId, url, type, tempId, content, createdAt }
     })
 
+    // save all the generated csv in their respective collection
+
     const scoredResult = allResults.find(el => el.type === 'scored')
-    // TODO save scored in collection
+    Scores.collection().insert(scoredResult)
 
     const dataResult = allResults.find(el => el.type === 'data')
-    // TODO save data in collection
+    Data.collection().insert(dataResult)
 
     const feedBackResult = allResults.find(el => el.type === 'feedback')
-    // save feedback and return
+    feedBackResult.userResponse = userResponse && userResponse.statusCode === 200 && userResponse.content
+    Feedback.collection().insert(feedBackResult)
 
     return feedBackResult
   }
