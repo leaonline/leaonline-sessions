@@ -159,6 +159,8 @@ Response.httpRoutes.evaluateSession = {
     })
 
     const requestStr = requestBuilder.build()
+    console.log(requestStr)
+
     const callOptions = { params: { [ evalParam ]: requestStr } }
     const response = HTTP.post(evalUrl, callOptions)
     const contentList = response.content.split('\n')
