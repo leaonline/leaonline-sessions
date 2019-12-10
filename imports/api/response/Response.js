@@ -104,8 +104,11 @@ Response.httpRoutes.submit = {
     const ResponseCollection = Response.collection()
     const responseDoc = ResponseCollection.findOne({ userId, contentId, page, taskId, sessionId })
     if (responseDoc) {
+      console.log('update response: ', userId, type, contentId, page, taskId, sessionId, responses)
+      console.log(responses.responses, ' => ', responses)
       return ResponseCollection.update(responseDoc._id, { $set: { responses, updatedAt: timeStamp } })
     } else {
+      console.log('insert response: ', userId, type, contentId, page, taskId, sessionId, responses)
       return ResponseCollection.insert({
         userId,
         type,
@@ -150,6 +153,10 @@ Response.httpRoutes.evaluateSession = {
     const ResponseCollection = Response.collection()
     const allResponses = ResponseCollection.find({ userId, sessionId }).fetch()
     const requestBuilder = new EvalRequestCSVStringBuilder(evalContext)
+    console.log()
+    console.log('Session ', sessionId, 'user', userId, 'responses:', allResponses.length)
+
+
     allResponses.forEach(responseDoc => {
       const pageIndex = responseDoc.page
       const taskId = responseDoc.taskId
@@ -159,6 +166,8 @@ Response.httpRoutes.evaluateSession = {
     })
 
     const requestStr = requestBuilder.build()
+    console.log()
+    console.log('Session ', sessionId, 'user', userId, 'request string:')
     console.log(requestStr)
 
     const callOptions = { params: { [ evalParam ]: requestStr } }
@@ -168,6 +177,8 @@ Response.httpRoutes.evaluateSession = {
     const createdAt = new Date()
 
     const userResponse =  HTTP.get(evalContext.base + contentList[0])
+    console.log()
+    console.log('Session ', sessionId, 'user', userId, 'response content:')
     console.log(userResponse.content)
 
     // SAVE CSV FILES
