@@ -34,7 +34,6 @@ function EvalRequestCSVStringBuilder ({ startIndex, responseIdSeparator, idPrefi
   this.valuePrefix = valuePrefix
   this.newLineChar = newLineChar
   this.separator = separator
-
 }
 
 EvalRequestCSVStringBuilder.prototype.build = function () {

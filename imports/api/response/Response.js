@@ -156,7 +156,6 @@ Response.httpRoutes.evaluateSession = {
     console.log()
     console.log('Session ', sessionId, 'user', userId, 'responses:', allResponses.length)
 
-
     allResponses.forEach(responseDoc => {
       const pageIndex = responseDoc.page
       const taskId = responseDoc.taskId
@@ -170,13 +169,13 @@ Response.httpRoutes.evaluateSession = {
     console.log('Session ', sessionId, 'user', userId, 'request string:')
     console.log(requestStr)
 
-    const callOptions = { params: { [ evalParam ]: requestStr } }
+    const callOptions = { params: { [evalParam]: requestStr } }
     const response = HTTP.post(evalUrl, callOptions)
     const contentList = response.content.split('\n')
     const csvResults = contentList.filter(entry => entry.indexOf('.csv') > -1)
     const createdAt = new Date()
 
-    const userResponse =  HTTP.get(evalContext.base + contentList[0])
+    const userResponse = HTTP.get(evalContext.base + contentList[0])
     console.log()
     console.log('Session ', sessionId, 'user', userId, 'response content:')
     console.log(userResponse.content)
@@ -215,5 +214,5 @@ function getType (csvStr) {
 
 function getTmpId (csvStr) {
   const split = csvStr && csvStr.split('/')
-  return split && split[ 2 ]
+  return split && split[2]
 }
