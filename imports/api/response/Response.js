@@ -1,5 +1,5 @@
 import { Meteor } from 'meteor/meteor'
-import { HTTP } from 'meteor/http'
+import { HTTP } from 'meteor/jkuester:http'
 import { EvalRequestCSVStringBuilder } from './evalRequestCSVStringBuilder'
 import { Feedback } from '../feedback/Feedback'
 import { Scores } from '../scores/Scores'
@@ -18,7 +18,7 @@ Response.schema = {
   userId: String,
   type: String,
   sessionId: String,
-  taskId: String,
+  unitId: String,
   page: String,
   contentId: {
     type: String,
@@ -32,6 +32,16 @@ Response.schema = {
     type: String,
     optional: true
   },
+
+  /**
+   * The sender should also give us a score result. This receiver makes no
+   * assumptions about how the score has been created, it's not the
+   */
+  competencies: Array,
+  'competencies.$': Object,
+  'competencies.$.id': String,
+  'competencies.$.score': String,
+
   createdAt: Date,
   updatedAt: {
     type: Date,
@@ -56,18 +66,18 @@ Response.httpRoutes.submit = {
     userId: String,
 
     /**
-     * _id of the session context of the task
+     * _id of the session context of the unit
      */
     sessionId: String,
 
     /**
-     * lea taskId (not _id!) of the task, for instance w0001
+     * lea unitId (not _id!) of the unit, for instance w0001
      */
-    taskId: String,
+    unitId: String,
 
     /**
      * Number of the page, that this items has been placed.
-     * The page also indicates the task index, which is used
+     * The page also indicates the unit index, which is used
      * to further distinct the repsonse contex in the evaluation environment.
      */
     page: String,
@@ -97,24 +107,24 @@ Response.httpRoutes.submit = {
       optional: true
     }
   },
-  run: Meteor.isServer && Meteor.bindEnvironment(function ({ userId, type, contentId, page, taskId, sessionId, responses }) {
+  run: Meteor.isServer && Meteor.bindEnvironment(function ({ userId, type, contentId, page, unitId, sessionId, responses }) {
     // TODO SECURITY check if sessions is running (call content server)
     // TODO and deny updating if session does not exists or is expired
     const timeStamp = new Date()
     const ResponseCollection = Response.collection()
-    const responseDoc = ResponseCollection.findOne({ userId, contentId, page, taskId, sessionId })
+    const responseDoc = ResponseCollection.findOne({ userId, contentId, page, unitId, sessionId })
     if (responseDoc) {
-      console.log('update response: ', userId, type, contentId, page, taskId, sessionId, responses)
+      console.log('update response: ', userId, type, contentId, page, unitId, sessionId, responses)
       console.log(responses.responses, ' => ', responses)
       return ResponseCollection.update(responseDoc._id, { $set: { responses, updatedAt: timeStamp } })
     } else {
-      console.log('insert response: ', userId, type, contentId, page, taskId, sessionId, responses)
+      console.log('insert response: ', userId, type, contentId, page, unitId, sessionId, responses)
       return ResponseCollection.insert({
         userId,
         type,
         contentId,
         page,
-        taskId,
+        unitId,
         sessionId,
         responses,
         createdAt: timeStamp
@@ -158,9 +168,9 @@ Response.httpRoutes.evaluateSession = {
 
     allResponses.forEach(responseDoc => {
       const pageIndex = responseDoc.page
-      const taskId = responseDoc.taskId
+      const unitId = responseDoc.unitId
       responseDoc.responses.forEach((value, responseIndex) => {
-        requestBuilder.add({ taskId, value, pageIndex, responseIndex })
+        requestBuilder.add({ unitId, value, pageIndex, responseIndex })
       })
     })
 
